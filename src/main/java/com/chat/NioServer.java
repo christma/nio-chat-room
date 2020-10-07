@@ -97,18 +97,37 @@ public class NioServer {
         // 将客户端发送的请求信息，广播到其他客户端
         if (request.length() > 0) {
             // 广播到其他客户端
-            System.out.println(" :: " + request);
+//            System.out.println(" :: " + request);
+            broadCast(selector, socketChannel, request);
         }
     }
 
+    private void broadCast(Selector selector, SocketChannel sourceChannel, String request) {
+        // 获取所有已介入的 channel
+        Set<SelectionKey> selectionKeySet = selector.keys();
+        // 循环箱所有channel 广播信息
+        selectionKeySet.forEach(selectionKey -> {
+            Channel targetChannel = selectionKey.channel();
+            // 剔除发消息的channel
+            if (targetChannel instanceof SocketChannel && targetChannel != sourceChannel) {
+                try {
+                    // 将消息发送到其他的客户端
+                    ((SocketChannel) targetChannel).write(Charset.forName("UTF-8").encode(request));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
     /**
      * 主方法
      *
      * @param args
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         NioServer nioServer = new NioServer();
+        nioServer.start();
     }
 }
